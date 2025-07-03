@@ -194,7 +194,7 @@ const Dashboard = () => {
                               {booking.packages.location}
                             </p>
                             <p className="text-green-600 font-semibold">
-                              ${booking.packages.price}
+                              Rs {booking.packages.price}
                             </p>
                           </div>
                         </div>

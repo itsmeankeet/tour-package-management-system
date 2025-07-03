@@ -12,15 +12,20 @@ import PackageDetail from "./pages/PackageDetail";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient(); //manage server state, {all the data you want to fetch, wherather it is loading or not, error}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+    {/* popup message */}
       <Toaster />
+      {/*toast notification library for showing succsess or error message*/}
       <Sonner />
+      {/* create navigation and route */}
       <BrowserRouter>
+        {/* authentication */}
         <AuthProvider>
+          {/* route */}
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />

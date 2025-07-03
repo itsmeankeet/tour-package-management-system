@@ -138,12 +138,19 @@ const PackageCard: React.FC<PackageCardProps> = ({
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">
           {pkg.description}
         </p>
-
-        <Link to={`/package/${pkg.id}`}>
-          <Button className="w-full bg-green-600 hover:bg-green-700">
-            View Details
-          </Button>
+        <Link
+          to={`/package/${pkg.id}`}
+          className="w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded block"
+        >
+          View Details
         </Link>
+        {/* first import navigate from react-router-dom and then make object of navigate and then use it in button */}
+        {/* <Button
+          onClick={() => navigate(`/package/${pkg.id}`)}
+          className="w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded block"
+        >
+          View Details
+        </Button> */}
       </CardContent>
     </Card>
   );
