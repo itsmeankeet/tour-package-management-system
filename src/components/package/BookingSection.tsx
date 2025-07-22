@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Calendar, CreditCard, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -39,7 +40,14 @@ const BookingSection: React.FC<BookingSectionProps> = ({
   const minDate = tomorrow.toISOString().split("T")[0];
 
   const handleBookingSubmit = async () => {
-    if (!travelDate) return;
+    if (!travelDate) {
+      toast({
+        title: "Please select a date",
+        description: "You must select a travel date to proceed with booking.",
+        variant: "destructive"
+      });
+      return;
+    }
     setBooking(true);
     try {
       await onBooking(travelDate);

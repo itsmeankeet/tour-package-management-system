@@ -30,7 +30,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/packages" element={<Packages />} />
-            <Route path="/package/:id" element={<PackageDetail />} />
+            <Route path="/package/:name" element={<PackageDetail />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
@@ -42,3 +42,4 @@ const App = () => (
 );
 
 export default App;
+

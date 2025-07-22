@@ -31,7 +31,7 @@ interface Review {
 }
 
 const PackageDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
 
@@ -41,23 +41,18 @@ const PackageDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
+    if (name) {
       fetchPackageDetails();
       if (user) checkFavoriteStatus();
     }
-  }, [id, user]);
-
-  useEffect(() => {
-    if (pkg) fetchReviews();
-  }, [pkg]);
+  }, [name, user]);
 
   const fetchPackageDetails = async () => {
-    setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('packages')
-        .select('*')
-        .eq('id', id)
+        .from("packages")
+        .select("*")
+        .eq("title", name?.replace(/-/g, ' '))
         .single();
 
       if (error) throw error;
@@ -73,6 +68,10 @@ const PackageDetail = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (pkg) fetchReviews();
+  }, [pkg]);
 
   const fetchReviews = async () => {
     if (!pkg) return;
@@ -91,13 +90,13 @@ const PackageDetail = () => {
   };
 
   const checkFavoriteStatus = async () => {
-    if (!user || !id) return;
+    if (!user || !pkg.id) return;
     try {
       const { data } = await supabase
         .from('favorites')
         .select('id')
         .eq('user_id', user.id)
-        .eq('package_id', id)
+        .eq('package_id', pkg.id)
         .single();
       setIsFavorite(!!data);
     } catch {
@@ -120,14 +119,14 @@ const PackageDetail = () => {
           .from('favorites')
           .delete()
           .eq('user_id', user.id)
-          .eq('package_id', id);
+          .eq('package_id', pkg.id);
         if (error) throw error;
         setIsFavorite(false);
         toast({ title: 'Removed from favorites' });
       } else {
         const { error } = await supabase
           .from('favorites')
-          .insert([{ user_id: user.id, package_id: id }]);
+          .insert([{ user_id: user.id, package_id: pkg.id }]);
         if (error) throw error;
         setIsFavorite(true);
         toast({ title: 'Added to favorites' });
@@ -155,7 +154,7 @@ const PackageDetail = () => {
       const { error } = await supabase.from('bookings').insert([
         {
           user_id: user.id,
-          package_id: id,
+          package_id: pkg.id,
           travel_date: travelDate,
           total_amount: pkg.price,
           status: 'pending',
@@ -176,30 +175,39 @@ const PackageDetail = () => {
     }
   };
 
-  const handleKhaltiPayment = () => {
+  const handleKhaltiPayment = async () => {
     if (!pkg) return;
-
-    // @ts-ignore
+  
+    if (typeof window.KhaltiCheckout === 'undefined') {
+      alert('Khalti script not loaded yet.');
+      return;
+    }
+  
     const checkout = new window.KhaltiCheckout({
       publicKey: 'test_public_key_dc74e0fd57cb46cd93832aee0a507256',
-      productIdentity: pkg.id,
+      productIdentity: pkg.id.toString(),
       productName: pkg.title,
       productUrl: window.location.href,
-      paymentPreference: [
-        'KHALTI',
-        'EBANKING',
-        'MOBILE_BANKING',
-        'CONNECT_IPS',
-        'SCT',
-      ],
+      paymentPreference: ['KHALTI', 'EBANKING', 'MOBILE_BANKING', 'CONNECT_IPS', 'SCT'],
       eventHandler: {
         onSuccess: async (payload: any) => {
           try {
+            // ✅ Verify payment with your backend before inserting booking
+            const verifyRes = await fetch('/api/verify-khalti-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: payload.token, amount: payload.amount }),
+            });
+            const result = await verifyRes.json();
+  
+            if (!result.success) throw new Error('Payment verification failed');
+  
+            // ✅ Insert booking into Supabase
             const { error } = await supabase.from('bookings').insert([
               {
                 user_id: user!.id,
-                package_id: id,
-                travel_date: payload.travel_date,
+                package_id: pkg.id,
+                travel_date: selectedDate, // from your date picker
                 total_amount: pkg.price,
                 payment_status: 'completed',
                 payment_method: 'khalti',
@@ -208,6 +216,7 @@ const PackageDetail = () => {
               },
             ]);
             if (error) throw error;
+  
             toast({
               title: 'Payment successful!',
               description: 'Your booking has been confirmed.',
@@ -227,11 +236,15 @@ const PackageDetail = () => {
             variant: 'destructive',
           });
         },
-        onClose: () => {},
+        onClose: () => {
+          console.log('Payment popup closed');
+        },
       },
     });
+  
     checkout.show({ amount: pkg.price * 100 });
   };
+  
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
     if (!user) return;
@@ -240,7 +253,7 @@ const PackageDetail = () => {
       const { error } = await supabase.from('reviews').insert([
         {
           user_id: user.id,
-          package_id: id,
+          package_id: pkg.id,
           rating,
           comment,
         },
@@ -284,10 +297,8 @@ const PackageDetail = () => {
     <div className="min-h-screen bg-gradient-to-b from-white via-green-50 to-green-100">
       <Navbar />
 
-      <script
-        src="https://khalti.s3.ap-south-1.amazonaws.com/KPG/dist/2020.12.17.0.0.0/khalti-checkout.ejs.min.js"
-        async
-      ></script>
+      <script src="https://khalti.com/static/khalti-checkout.js"></script>
+
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
         <PackageHeader
